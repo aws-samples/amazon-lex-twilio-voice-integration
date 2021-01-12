@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<project name="TwilioWaitAndContinue-1.0" basedir=".">
+
+    <property name="output.dir" value="${user.dir}/war-output" />
+
+    <target name="war" >
+        <war destfile="${output.dir}/${ant.project.name}.war" webxml="configurations/tomcat-configuration/web.xml">
+            <!-- Update this to correct artifact path -->
+            <lib dir="${user.dir}/out/artifacts/amazon_lex_as_conversational_interface_for_twilio_jar"/>
+        </war>
+    </target>
+</project>
