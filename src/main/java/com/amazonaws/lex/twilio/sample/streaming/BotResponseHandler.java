@@ -1,6 +1,7 @@
 package com.amazonaws.lex.twilio.sample.streaming;
 
 import com.amazonaws.lex.twilio.sample.conversation.TwilioCallOperator;
+import org.apache.log4j.Logger;
 import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.services.lexruntimev2.model.AudioResponseEvent;
 import software.amazon.awssdk.services.lexruntimev2.model.DialogActionType;
@@ -41,6 +42,8 @@ import java.util.concurrent.CompletableFuture;
  */
 public class BotResponseHandler implements StartConversationResponseHandler {
 
+    private static final Logger LOG = Logger.getLogger(BotResponseHandler.class);
+    
     private final EventsPublisher eventsPublisher;
     private final TwilioCallOperator twilioCallOperator;
 
@@ -57,7 +60,7 @@ public class BotResponseHandler implements StartConversationResponseHandler {
 
     @Override
     public void responseReceived(StartConversationResponse startConversationResponse) {
-        System.out.println("successfully established the connection with server. request id:" + startConversationResponse.responseMetadata().requestId()); // would have 2XX, request id.
+        LOG.info("successfully established the connection with server. request id:" + startConversationResponse.responseMetadata().requestId()); // would have 2XX, request id.
     }
 
     @Override
@@ -80,16 +83,17 @@ public class BotResponseHandler implements StartConversationResponseHandler {
 
     @Override
     public void exceptionOccurred(Throwable throwable) {
+        LOG.error(throwable);
         System.err.println("got an exception:" + throwable);
     }
 
     @Override
     public void complete() {
-        System.out.println("on complete");
+        LOG.info("on complete");
     }
 
     private void handle(PlaybackInterruptionEvent event) {
-        System.out.println("Got a PlaybackInterruptionEvent: " + event);
+        LOG.info("Got a PlaybackInterruptionEvent: " + event);
 
         twilioCallOperator.pausePlayback();
 
@@ -101,16 +105,16 @@ public class BotResponseHandler implements StartConversationResponseHandler {
             e.printStackTrace();
         }
 
-        System.out.println("Done with a  PlaybackInterruptionEvent: " + event);
+        LOG.info("Done with a  PlaybackInterruptionEvent: " + event);
     }
 
     private void handle(TranscriptEvent event) {
-        System.out.println("Got a TranscriptEvent: " + event);
+        LOG.info("Got a TranscriptEvent: " + event);
     }
 
 
     private void handle(IntentResultEvent event) {
-        System.out.println("Got an IntentResultEvent: " + event);
+        LOG.info("Got an IntentResultEvent: " + event);
         isDialogStateClosed = DialogActionType.CLOSE.equals(event.sessionState().dialogAction().type());
 
 //        if (isDialogStateClosed) {
@@ -119,18 +123,18 @@ public class BotResponseHandler implements StartConversationResponseHandler {
     }
 
     private void handle(TextResponseEvent event) {
-        System.out.println("Got an TextResponseEvent: " + event);
+        LOG.info("Got an TextResponseEvent: " + event);
         event.messages().forEach(message -> {
-            System.out.println("Message content type:" + message.contentType());
-            System.out.println("Message content:" + message.content());
+            LOG.info("Message content type:" + message.contentType());
+            LOG.info("Message content:" + message.content());
         });
     }
 
     private void handle(AudioResponseEvent event) {//synthesize speech
-        // System.out.println("Got a AudioResponseEvent: " + event);
+        // LOG.info("Got a AudioResponseEvent: " + event);
         if (audioResponse == null && event.audioChunk() != null) {
 
-            System.out.println("got a non empty audio response. starting a audio response collector in a separate thread");
+            LOG.info("got a non empty audio response. starting a audio response collector in a separate thread");
             audioResponse = new AudioResponse();
             CompletableFuture.runAsync(() -> twilioCallOperator.playback(audioResponse)).whenComplete((result, error) -> {
                 if (error != null) {

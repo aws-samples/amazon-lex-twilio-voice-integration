@@ -8,6 +8,7 @@ import com.amazonaws.lex.twilio.sample.server.messages.MediaMessage;
 import com.amazonaws.lex.twilio.sample.server.messages.Message;
 import com.amazonaws.lex.twilio.sample.streaming.AudioResponse;
 import com.google.gson.JsonObject;
+import org.apache.log4j.Logger;
 
 import javax.websocket.EncodeException;
 import javax.websocket.Session;
@@ -35,6 +36,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class TwilioCallOperator {
+    private static final Logger LOG = Logger.getLogger(TwilioCallOperator.class);
+
     public static final int MAX_BYTES_TO_READ = 10000; // better to read more
     private final CallIdentifier callIdentifier;
     private final Session session;
@@ -61,12 +64,9 @@ public class TwilioCallOperator {
             int numOfBytesRead = responseStream.read(bytes);
             //while not end of stream, or not playback paused
             while (numOfBytesRead != -1 && !interruptSendingDataToTwilio.get()) {
-
-                // System.out.println("numOfBytesRead:" + numOfBytesRead);
-
                 byte[] copy = Arrays.copyOf(bytes, numOfBytesRead);
                 MediaMessage mediaMessage = new MediaMessage(copy, callIdentifier.getStreamSid());
-                writeToStream(mediaMessage.getJsonObject());
+                writeToStream(mediaMessage.getJsonObject(), false);
                 bytes = new byte[MAX_BYTES_TO_READ];
                 numOfBytesRead = responseStream.read(bytes);
             }
@@ -75,9 +75,9 @@ public class TwilioCallOperator {
                 // mark the end of stream and when we get back the same mark, we inform bot that
                 // playback is complete.
 
-                System.out.println("audio stream has ended, marking  a message ");
+                LOG.info("audio stream has ended, marking  a message ");
                 currentPlaybackLabel = Optional.of(UUID.randomUUID().toString());
-                writeToStream(new MarkMessage(callIdentifier.getStreamSid(), currentPlaybackLabel.get()).getJsonObject());
+                writeToStream(new MarkMessage(callIdentifier.getStreamSid(), currentPlaybackLabel.get()).getJsonObject(), true);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -90,12 +90,13 @@ public class TwilioCallOperator {
         //update call
         interruptSendingDataToTwilio.set(true);
 
-        System.out.println("user seems to have interrupted playback, requesting twilio to stop playback with clear message");
+        LOG.info("user seems to have interrupted playback, requesting twilio to stop playback with clear message");
+
         ClearMessage clearMessage = new ClearMessage(callIdentifier.getStreamSid());
 
         currentPlaybackLabel = Optional.empty();
 
-        writeToStream(clearMessage.getJsonObject());
+        writeToStream(clearMessage.getJsonObject(), true);
 
         interruptSendingDataToTwilio.set(false);
     }
@@ -104,12 +105,14 @@ public class TwilioCallOperator {
     }
 
 
-    private void writeToStream(JsonObject message) {
+    private void writeToStream(JsonObject message, boolean log) {
         try {
-            //System.out.println("Sending message to Twilio:" + message);
+            if (log) {
+                LOG.info("Sending message to Twilio:" + message);
+            }
             session.getBasicRemote().sendObject(new Message(message.toString()));
         } catch (IOException | EncodeException e) {
-            e.printStackTrace();
+            LOG.error(e);
         }
     }
 }

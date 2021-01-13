@@ -32,12 +32,13 @@ import java.io.IOException;
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 @WebServlet("/voice")
-public class MainServlet extends HttpServlet {
+public class
+
+MainServlet extends HttpServlet {
 
     private static final Logger LOGGER = Logger.getLogger(MainServlet.class);
 
     public MainServlet() {
-        System.setProperty("log4j.configurationFile", "log4j2.xml");
     }
 
     @Override
@@ -50,8 +51,6 @@ public class MainServlet extends HttpServlet {
                 "audiostream");
 
         LOGGER.info(String.format("websockets stream url %s", pathForWebsocketsStream));
-
-        System.out.println(String.format("websockets stream url %s", pathForWebsocketsStream));
 
         Say say = new Say.Builder().addText("Welcome to a Twilio Lex sample application.").build();
 
@@ -78,9 +77,7 @@ public class MainServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse)
             throws ServletException, IOException {
-        //System.setProperty("org.apache.logging.log4j.simplelog.StatusLogger.level", "TRACE");
         LOGGER.info("Hello World from log!");
-        System.out.println("Hello World from log!");
 
         httpServletResponse.setContentType("text/html");
 

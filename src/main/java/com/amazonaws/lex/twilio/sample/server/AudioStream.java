@@ -16,11 +16,11 @@ import com.amazonaws.lex.twilio.sample.streaming.LexBidirectionalStreamingClient
 import com.google.common.primitives.Bytes;
 import org.apache.log4j.Logger;
 
+
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
-import javax.websocket.EncodeException;
 import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -59,7 +59,7 @@ import java.util.Map;
         encoders = MessageEncoder.class)
 public class AudioStream {
 
-    private static final Logger LOGGER = Logger.getLogger(AudioStream.class);
+    private static final Logger LOG = Logger.getLogger(AudioStream.class);
     private final Map<String, byte[]> rawBytes;
 
     private Session session;
@@ -78,12 +78,12 @@ public class AudioStream {
     public void onOpen(Session session) {
         this.session = session;
 
-        LOGGER.info("onOpen triggered by Twilio");
+        LOG.info("onOpen triggered by Twilio");
     }
 
     @OnMessage
     public void onMessage(Message message) {
-        //System.out.println("message ..." + message);
+        //LOG.info("message ..." + message);
         if (message.eventType().equals(MessageType.CONNECTED)) {
             // first message, does not contain anything useful
             // apart from some meta data.
@@ -92,17 +92,20 @@ public class AudioStream {
             // stream id, account id, call id. remember to update them
             // later
             StartMessage startMessage = message.asStartMessage();
-            System.out.println("got a start message from twilio :" + startMessage);
+            LOG.info("got a start message from twilio:" + startMessage);
 
             CallIdentifier callIdentifier = startMessage.getCallIdentifier();
             this.twilioCallOperator = new TwilioCallOperator(callIdentifier, session);
-            this.botConversation = new LexBidirectionalStreamingClient().startConversation(twilioCallOperator);
+            try {
+                this.botConversation = new LexBidirectionalStreamingClient().startConversation(twilioCallOperator);
+            } catch (URISyntaxException e) {
+                LOG.error(e);
+            }
         } else if (message.eventType().equals(MessageType.MEDIA)) {
             // contains audio data, decode for inbound audio
             // and send it to bot
             MediaMessage mediaMessage = message.asMediaMessage();
 
-            //System.out.println(mediaMessage.getTrack());
             byte[] uLawEncodedByte = mediaMessage.getDecodedPayload();
             byte[] uncompressedBytes = DecompressInputStream.decompressULawBytes(uLawEncodedByte);
             byte[] copiedBytes = Arrays.copyOf(uncompressedBytes, uncompressedBytes.length);
@@ -116,14 +119,16 @@ public class AudioStream {
             //persistBytesInMemory(mediaMessage.getStreamSid(), copiedBytes);
         } else if (message.eventType().equals(MessageType.STOP)) {
             StopMessage stopMessage = message.asStopMessage();
-            System.out.println("got a stop message from twilio :" + stopMessage);
+            LOG.info("got a stop message from twilio:" + stopMessage);
+
             this.botConversation.stopConversation();
 
             //persistBytesToDisk(stopMessage.getCallIdentifier().getStreamSid());
 
         } else if (message.eventType().equals(MessageType.MARK)) {
             MarkMessage markMessage = message.asMarkMessage();
-            System.out.println("got a mark message from twilio :" + markMessage);
+            LOG.info("got a mark message from twilio:" + markMessage);
+
             if (this.twilioCallOperator.getCurrentPlaybackLabel().isPresent() && this.twilioCallOperator.getCurrentPlaybackLabel().get().equals(markMessage.getMarkName())) {
                 botConversation.informPlaybackFinished();
             }
@@ -147,15 +152,15 @@ public class AudioStream {
             AudioSystem.write(new AudioInputStream(new ByteArrayInputStream(
                     rawBytes.get(streamSid)), format, rawBytes.get(streamSid).length), AudioFileFormat.Type.WAVE, tempFile.toFile());
 
-            System.out.println("persisted data @ " + tempFile.toAbsolutePath());
+            LOG.info("persisted data @ " + tempFile.toAbsolutePath());
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("IOException when writing data to disk", e);
         }
     }
 
     @OnClose
     public void onClose(Session session) {
-        LOGGER.info("onClose triggered");
+        LOG.info("onClose triggered");
         this.session = session;
     }
 }

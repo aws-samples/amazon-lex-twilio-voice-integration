@@ -1,9 +1,6 @@
 package com.amazonaws.lex.twilio.sample.streaming;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.net.MediaType;
-import com.google.gson.JsonObject;
+import org.apache.log4j.Logger;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import software.amazon.awssdk.core.SdkBytes;
@@ -13,16 +10,7 @@ import software.amazon.awssdk.services.lexruntimev2.model.DisconnectionEvent;
 import software.amazon.awssdk.services.lexruntimev2.model.PlaybackCompletionEvent;
 import software.amazon.awssdk.services.lexruntimev2.model.StartConversationRequestEventStream;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.TargetDataLine;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -46,6 +34,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class AudioEventsSubscription implements Subscription {
+    private static final Logger LOG = Logger.getLogger(AudioEventsSubscription.class);
+
     private static final String AUDIO_CONTENT_TYPE = "audio/lpcm; sample-rate=8000; sample-size-bits=16; channel-count=1; is-big-endian=false";
     private static final String RESPONSE_TYPE = "audio/pcm; sample-rate=8000";
     private static final AtomicLong eventIdGenerator = new AtomicLong(0);
@@ -96,7 +86,7 @@ public class AudioEventsSubscription implements Subscription {
                 .build();
 
         eventWriter.writeConfigurationEvent(configurationEvent);
-        System.out.println("sending a ConfigurationEvent to server:" + configurationEvent);
+        LOG.info("sending a ConfigurationEvent to server:" + configurationEvent);
     }
 
 
@@ -112,7 +102,7 @@ public class AudioEventsSubscription implements Subscription {
 
         eventWriter.writeDisconnectEvent(disconnectionEvent);
 
-        System.out.println("sending a DisconnectionEvent to server:" + disconnectionEvent);
+        LOG.info("sending a DisconnectionEvent to server:" + disconnectionEvent);
 
         eventWriter.stop();
     }
@@ -134,7 +124,7 @@ public class AudioEventsSubscription implements Subscription {
 
         eventWriter.writePlaybackFinishedEvent(playbackCompletionEvent);
 
-        System.out.println("sending a PlaybackCompletionEvent to server:" + playbackCompletionEvent);
+        LOG.info("sending a PlaybackCompletionEvent to server:" + playbackCompletionEvent);
     }
 
     public void writeAudioEvent(ByteBuffer byteBuffer) {

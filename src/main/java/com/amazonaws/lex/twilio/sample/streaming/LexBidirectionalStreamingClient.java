@@ -2,6 +2,7 @@ package com.amazonaws.lex.twilio.sample.streaming;
 
 import com.amazonaws.lex.twilio.sample.conversation.BotConversation;
 import com.amazonaws.lex.twilio.sample.conversation.TwilioCallOperator;
+import org.apache.log4j.Logger;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -13,6 +14,8 @@ import software.amazon.awssdk.services.lexruntimev2.model.StartConversationReque
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -51,6 +54,8 @@ import java.util.concurrent.CompletableFuture;
  */
 public class LexBidirectionalStreamingClient {
 
+    private static final Logger LOG = Logger.getLogger(LexBidirectionalStreamingClient.class);
+    
     private final String botId;
     private final String botAliasId;
     private final String localeId;
@@ -75,7 +80,6 @@ public class LexBidirectionalStreamingClient {
         try (InputStream input = this.getClass().getClassLoader().getResourceAsStream("bot-configuration.properties")) {
 
             Properties prop = new Properties();
-
             // load a properties file
             prop.load(input);
 
@@ -85,31 +89,31 @@ public class LexBidirectionalStreamingClient {
         }
     }
 
-    public BotConversation startConversation(TwilioCallOperator twilioCallOperator) {
+    public BotConversation startConversation(TwilioCallOperator twilioCallOperator) throws URISyntaxException {
 
         AwsCredentialsProvider awsCredentialsProvider = StaticCredentialsProvider
                 .create(AwsBasicCredentials.create(accessKey, secretKey));
 
         // create a new SDK client. you will need to use an async client.
-        System.out.println("step 1: creating a new Lex SDK client");
+        LOG.info("step 1: creating a new Lex SDK client");
         LexRuntimeV2AsyncClient lexRuntimeServiceClient = LexRuntimeV2AsyncClient.builder()
                 .region(region)
                 .credentialsProvider(awsCredentialsProvider)
                 .build();
 
         // configure bot, alias and locale with which to have a conversation.
-        System.out.println("step 2: configuring bot details");
+        LOG.info("step 2: configuring bot details");
         StartConversationRequest.Builder startConversationRequestBuilder = StartConversationRequest.builder()
                 .botId(botId)
                 .botAliasId(botAliasId)
                 .localeId(localeId);
 
         // configure the conversation mode with bot (defaults to audio)
-        System.out.println("step 3: choosing conversation mode");
+        LOG.info("step 3: choosing conversation mode");
         startConversationRequestBuilder = startConversationRequestBuilder.conversationMode(ConversationMode.AUDIO);
 
         // assign a unique identifier for the conversation
-        System.out.println("step 4: choosing a unique conversation identifier");
+        LOG.info("step 4: choosing a unique conversation identifier");
         startConversationRequestBuilder = startConversationRequestBuilder.sessionId(sessionId);
 
         // build the initial request
@@ -123,7 +127,7 @@ public class LexBidirectionalStreamingClient {
         BotResponseHandler botResponseHandler = new BotResponseHandler(eventsPublisher, twilioCallOperator);
 
         // start a connection and pass in the a publisher that will stream audio and process bot responses.
-        System.out.println("step 5: starting the conversation ...");
+        LOG.info("step 5: starting the conversation ...");
         CompletableFuture<Void> conversation = lexRuntimeServiceClient.startConversation(
                 startConversationRequest,
                 eventsPublisher,

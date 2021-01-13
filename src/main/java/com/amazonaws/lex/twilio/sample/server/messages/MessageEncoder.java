@@ -1,6 +1,7 @@
 package com.amazonaws.lex.twilio.sample.server.messages;
 
 import com.google.gson.Gson;
+import org.apache.log4j.Logger;
 
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
@@ -25,11 +26,13 @@ import javax.websocket.EndpointConfig;
  */
 public class MessageEncoder implements Encoder.Text<Message> {
 
+    private static final Logger LOG = Logger.getLogger(MessageEncoder.class);
+
     private static Gson gson = new Gson();
 
     @Override
     public String encode(Message message) {
-        //System.out.println(message.getJsonObject().toString());
+        //LOG.info(message.getJsonObject().toString());
         return message.getJsonObject().toString();
     }
 
