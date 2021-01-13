@@ -117,9 +117,9 @@ You can use ngrok for this. You can use the instructions on how to use ngrok [he
     ```
 * Configure the Twilio phone number to invoke the public url generated above. You can use the instructions [here](https://support.twilio.com/hc/en-us/articles/223135027-Configure-a-Twilio-Phone-Number-to-Receive-and-Respond-to-Voice-Calls) 
 on how to configure a Twilio phone number to invoke a webhook when a voice call comes in. 
-    * You will need to append “/voice” to the URL generated with Ngrok. E.g. URL to add in Twilio console
+    * You will need to append “/TwilioWaitAndContinue-1.0/voice” to the URL generated with Ngrok. E.g. URL to add in Twilio console
     ```
-    https://0002113b6b40.ngrok.io/voice
+    https://0002113b6b40.ngrok.io/TwilioWaitAndContinue-1.0/voice
     ```
 * Save the changes  
 
