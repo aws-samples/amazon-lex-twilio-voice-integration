@@ -103,14 +103,10 @@ public class AudioEventsSubscription implements Subscription {
         eventWriter.writeDisconnectEvent(disconnectionEvent);
 
         LOG.info("sending a DisconnectionEvent to server:" + disconnectionEvent);
-
-        eventWriter.stop();
     }
 
-    //notify subscriber that we are done.
     public void stop() {
         disconnect();
-        subscriber.onComplete();
     }
 
     public void playbackFinished() {
@@ -189,8 +185,16 @@ public class AudioEventsSubscription implements Subscription {
                         for (long i = 0; i < currentDemand; i++) {
 
                             if (eventQueue.peek() != null) {
-                                subscriber.onNext(eventQueue.take());
+                                StartConversationRequestEventStream event = eventQueue.take();
+                                subscriber.onNext(event);
                                 demand.decrementAndGet();
+
+                                // if this was disconnect event, break this loop to stop sending more events.
+                                // tell the subscriber, we are done
+                                if (event instanceof DisconnectionEvent) {
+                                    stop = true;
+                                    subscriber.onComplete();
+                                }
                             }
 
                         }

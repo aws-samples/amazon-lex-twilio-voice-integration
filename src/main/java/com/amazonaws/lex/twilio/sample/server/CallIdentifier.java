@@ -1,6 +1,7 @@
 package com.amazonaws.lex.twilio.sample.server;
 
 import java.util.Objects;
+import java.util.StringJoiner;
 
 /*
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -56,5 +57,14 @@ public class CallIdentifier {
     @Override
     public int hashCode() {
         return Objects.hash(accountId, callId, streamSid);
+    }
+
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", CallIdentifier.class.getSimpleName() + "[", "]")
+                .add("accountId='" + accountId + "'")
+                .add("callId='" + callId + "'")
+                .add("streamSid='" + streamSid + "'")
+                .toString();
     }
 }

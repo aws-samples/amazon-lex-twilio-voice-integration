@@ -1,5 +1,6 @@
 package com.amazonaws.lex.twilio.sample.streaming;
 
+import com.amazonaws.lex.twilio.sample.conversation.BotConversation;
 import com.amazonaws.lex.twilio.sample.conversation.TwilioCallOperator;
 import org.apache.log4j.Logger;
 import software.amazon.awssdk.core.async.SdkPublisher;
@@ -43,17 +44,17 @@ import java.util.concurrent.CompletableFuture;
 public class BotResponseHandler implements StartConversationResponseHandler {
 
     private static final Logger LOG = Logger.getLogger(BotResponseHandler.class);
-    
-    private final EventsPublisher eventsPublisher;
+
+    private final BotConversation botConversation;
     private final TwilioCallOperator twilioCallOperator;
 
     private boolean lastBotResponsePlayedBack;
     private boolean isDialogStateClosed;
     private AudioResponse audioResponse;
 
-    public BotResponseHandler(EventsPublisher eventsPublisher, TwilioCallOperator twilioCallOperator) {
+    public BotResponseHandler(BotConversation botConversation, TwilioCallOperator twilioCallOperator) {
         this.twilioCallOperator = twilioCallOperator;
-        this.eventsPublisher = eventsPublisher;
+        this.botConversation = botConversation;
         this.lastBotResponsePlayedBack = false;// at start, we have not played back last response from bot
         this.isDialogStateClosed = false; // at start, dialog state is open
     }
@@ -117,9 +118,11 @@ public class BotResponseHandler implements StartConversationResponseHandler {
         LOG.info("Got an IntentResultEvent: " + event);
         isDialogStateClosed = DialogActionType.CLOSE.equals(event.sessionState().dialogAction().type());
 
-//        if (isDialogStateClosed) {
-//            eventsPublisher.stop();
-//        }
+        // if dialog state is closed, stop sending events to lex server
+        // after the last message is played back, ask twilio call operator to hang up
+        if (isDialogStateClosed) {
+            botConversation.stopConversation();
+        }
     }
 
     private void handle(TextResponseEvent event) {
@@ -128,6 +131,15 @@ public class BotResponseHandler implements StartConversationResponseHandler {
             LOG.info("Message content type:" + message.contentType());
             LOG.info("Message content:" + message.content());
         });
+
+        // if bot does not have a message, and this dialog was closed, we should hang up because
+        // we will never send a message to play to twilio and subsequently, never get back a
+        // mark message from twilio that playback for last message has finished. therefore,
+        // short circuit the call here and just hangup Twilio call.
+        if (isDialogStateClosed && !event.hasMessages()) {
+            LOG.info("dialog is closed, and there is no message to playback. hanging up the twilio call.");
+            twilioCallOperator.hangUp(false);
+        }
     }
 
     private void handle(AudioResponseEvent event) {//synthesize speech

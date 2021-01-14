@@ -2,17 +2,25 @@
 <!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN" "log4j.dtd">
 <log4j:configuration xmlns:log4j='http://jakarta.apache.org/log4j/'>
     <root>
-        <priority value ="debug" />
-        <appender-ref ref="STDOUT" />
+        <priority value="debug"/>
+        <appender-ref ref="STDOUT"/>
     </root>
+
     <appender name="STDOUT" class="org.apache.log4j.ConsoleAppender">
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%d{dd MMM yyyy HH:mm:ss,SSS} [%p] %X{RequestId} (%t) %c: %m%n"/>
         </layout>
     </appender>
+
     <category name="org.apache.log4j.xml">
-        <priority value="info" />
+        <priority value="info"/>
     </category>
+
+
+    <logger name="software.amazon.awssdk.services" additivity="false">
+        <level value="debug"/>
+        <appender-ref ref="STDOUT"/>
+    </logger>
 
 </log4j:configuration>
 

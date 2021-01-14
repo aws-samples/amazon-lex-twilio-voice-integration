@@ -38,10 +38,6 @@ public class EventsPublisher implements Publisher<StartConversationRequestEventS
         subscriber.onSubscribe(audioEventsSubscription);
     }
 
-    public void disconnect() {
-        audioEventsSubscription.disconnect();
-    }
-
     public void stop() {
         audioEventsSubscription.stop();
     }

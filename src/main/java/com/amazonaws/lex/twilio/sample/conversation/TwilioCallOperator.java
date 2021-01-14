@@ -7,14 +7,20 @@ import com.amazonaws.lex.twilio.sample.server.messages.MarkMessage;
 import com.amazonaws.lex.twilio.sample.server.messages.MediaMessage;
 import com.amazonaws.lex.twilio.sample.server.messages.Message;
 import com.amazonaws.lex.twilio.sample.streaming.AudioResponse;
+import com.amazonaws.lex.twilio.sample.streaming.LexBidirectionalStreamingClient;
 import com.google.gson.JsonObject;
+import com.twilio.Twilio;
+import com.twilio.rest.api.v2010.account.Call;
 import org.apache.log4j.Logger;
 
 import javax.websocket.EncodeException;
 import javax.websocket.Session;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -39,6 +45,28 @@ public class TwilioCallOperator {
     private static final Logger LOG = Logger.getLogger(TwilioCallOperator.class);
 
     public static final int MAX_BYTES_TO_READ = 10000; // better to read more
+
+    static {
+        Properties properties = readProperties();
+
+        Twilio.init(properties.getProperty("account-sid"), properties.getProperty("auth-token"));
+
+    }
+
+    private static Properties readProperties() {
+        try (InputStream input = LexBidirectionalStreamingClient.class.getClassLoader().getResourceAsStream("twilio-configuration.properties")) {
+
+            Properties prop = new Properties();
+            // load a properties file
+            prop.load(input);
+
+            return prop;
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+    }
+
+
     private final CallIdentifier callIdentifier;
     private final Session session;
     private final AtomicBoolean interruptSendingDataToTwilio;
@@ -84,7 +112,7 @@ public class TwilioCallOperator {
         }
     }
 
-    //send clear message as per https://www.twilio.com/docs/voice/twiml/stream#message-clear-to-twilio
+    // send clear message as per https://www.twilio.com/docs/voice/twiml/stream#message-clear-to-twilio
     // by the time pausePlayback comes, all data might have already been sent to the Twilio server
     public void pausePlayback() {
         //update call
@@ -101,9 +129,14 @@ public class TwilioCallOperator {
         interruptSendingDataToTwilio.set(false);
     }
 
-    public void hangUp() {
-    }
+    // See https://www.twilio.com/docs/voice/tutorials/how-to-modify-calls-in-progress-java
+    public void hangUp(boolean exceptionCase) {
+        LOG.info("hanging up the twilio call:" + callIdentifier);
 
+        Call.updater(callIdentifier.getCallId())
+                .setStatus(Call.UpdateStatus.COMPLETED)
+                .update();
+    }
 
     private void writeToStream(JsonObject message, boolean log) {
         try {

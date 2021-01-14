@@ -1,21 +1,20 @@
 package com.amazonaws.lex.twilio.sample.server;
 
 
+import com.amazonaws.lex.twilio.sample.conversation.BotConversation;
 import com.amazonaws.lex.twilio.sample.conversation.TwilioCallOperator;
-import com.amazonaws.lex.twilio.sample.server.messages.MarkMessage;
-import com.amazonaws.lex.twilio.sample.server.messages.Message;
 import com.amazonaws.lex.twilio.sample.server.media.DecompressInputStream;
+import com.amazonaws.lex.twilio.sample.server.messages.MarkMessage;
 import com.amazonaws.lex.twilio.sample.server.messages.MediaMessage;
+import com.amazonaws.lex.twilio.sample.server.messages.Message;
 import com.amazonaws.lex.twilio.sample.server.messages.MessageDecoder;
 import com.amazonaws.lex.twilio.sample.server.messages.MessageEncoder;
 import com.amazonaws.lex.twilio.sample.server.messages.MessageType;
 import com.amazonaws.lex.twilio.sample.server.messages.StartMessage;
 import com.amazonaws.lex.twilio.sample.server.messages.StopMessage;
-import com.amazonaws.lex.twilio.sample.conversation.BotConversation;
 import com.amazonaws.lex.twilio.sample.streaming.LexBidirectionalStreamingClient;
 import com.google.common.primitives.Bytes;
 import org.apache.log4j.Logger;
-
 
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
@@ -131,6 +130,12 @@ public class AudioStream {
 
             if (this.twilioCallOperator.getCurrentPlaybackLabel().isPresent() && this.twilioCallOperator.getCurrentPlaybackLabel().get().equals(markMessage.getMarkName())) {
                 botConversation.informPlaybackFinished();
+            }
+            if (botConversation.isConversationStopped()) {
+                // this notification is for  message for which dialog state is closed, and has played back to user.
+                // by this time, we have already stopped sending events to bot (events publisher has been stopped)
+                // only pending this is to hangup the ongoing call.
+                twilioCallOperator.hangUp(false);
             }
         }
     }

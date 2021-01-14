@@ -1,8 +1,10 @@
 package com.amazonaws.lex.twilio.sample.conversation;
 
 import com.amazonaws.lex.twilio.sample.streaming.EventsPublisher;
+import org.apache.log4j.Logger;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.locks.ReentrantLock;
 
 /*
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -22,21 +24,64 @@ import java.nio.ByteBuffer;
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class BotConversation {
+
+    private static final Logger LOG = Logger.getLogger(BotConversation.class);
     private final EventsPublisher eventsPublisher;
+    private final ReentrantLock lock;
+
+    private boolean conversationStopped;
 
     public BotConversation(EventsPublisher eventsPublisher) {
         this.eventsPublisher = eventsPublisher;
+        this.conversationStopped = false;
+        this.lock = new ReentrantLock();
+    }
+
+    public boolean isConversationStopped() {
+        lock.lock();
+        try {
+            return conversationStopped;
+        } finally {
+            lock.unlock();
+        }
     }
 
     public void writeUserInputAudio(ByteBuffer byteBuffer) {
-        eventsPublisher.writeUserInputAudio(byteBuffer);
+        lock.lock();
+        try {
+            if (!conversationStopped) {
+                eventsPublisher.writeUserInputAudio(byteBuffer);
+            } else {
+                LOG.debug("ignoring sending user input audio to server because conversation has stopped");
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 
     public void informPlaybackFinished() {
-        eventsPublisher.playbackFinished();
+        lock.lock();
+        try {
+            if (!conversationStopped) {
+                eventsPublisher.playbackFinished();
+            } else {
+                LOG.warn("ignoring sending playback interruption to server because conversation has stopped");
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 
     public void stopConversation() {
-        eventsPublisher.stop();
+        lock.lock();
+        try {
+            if (!conversationStopped) {
+                eventsPublisher.stop();
+            }
+            conversationStopped = true;
+        } finally {
+            lock.unlock();
+        }
     }
+
 }

@@ -14,7 +14,6 @@ import software.amazon.awssdk.services.lexruntimev2.model.StartConversationReque
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Properties;
 import java.util.UUID;
@@ -55,29 +54,38 @@ import java.util.concurrent.CompletableFuture;
 public class LexBidirectionalStreamingClient {
 
     private static final Logger LOG = Logger.getLogger(LexBidirectionalStreamingClient.class);
-    
-    private final String botId;
-    private final String botAliasId;
-    private final String localeId;
-    private final String accessKey;
-    private final String secretKey;
-    private final Region region;
+
+    private static final String botId;
+    private static final String botAliasId;
+    private static final String localeId;
+    private static final String accessKey;
+    private static final String secretKey;
+    private static final Region region;
+    private static final LexRuntimeV2AsyncClient lexRuntimeServiceClient;
     private final String sessionId;
 
-    public LexBidirectionalStreamingClient() {
+    static {
         Properties properties = readProperties();
 
-        this.botId = properties.getProperty("botId");
-        this.botAliasId = properties.getProperty("botAliasId");
-        this.localeId = properties.getProperty("localeId");
-        this.accessKey = properties.getProperty("accessKey");
-        this.secretKey = properties.getProperty("secretKey");
-        this.region = Region.of(properties.getProperty("region"));
-        this.sessionId = UUID.randomUUID().toString();
+        botId = properties.getProperty("botId");
+        botAliasId = properties.getProperty("botAliasId");
+        localeId = properties.getProperty("localeId");
+        accessKey = properties.getProperty("accessKey");
+        secretKey = properties.getProperty("secretKey");
+        region = Region.of(properties.getProperty("region"));
+
+        AwsCredentialsProvider awsCredentialsProvider = StaticCredentialsProvider
+                .create(AwsBasicCredentials.create(accessKey, secretKey));
+
+        lexRuntimeServiceClient = LexRuntimeV2AsyncClient.builder()
+                .region(region)
+                .credentialsProvider(awsCredentialsProvider)
+                //.endpointOverride(new URI("https://runtime-v2-lex.us-west-2.amazonaws.com"))
+                .build();
     }
 
-    private Properties readProperties() {
-        try (InputStream input = this.getClass().getClassLoader().getResourceAsStream("bot-configuration.properties")) {
+    private static Properties readProperties() {
+        try (InputStream input = LexBidirectionalStreamingClient.class.getClassLoader().getResourceAsStream("bot-configuration.properties")) {
 
             Properties prop = new Properties();
             // load a properties file
@@ -89,17 +97,16 @@ public class LexBidirectionalStreamingClient {
         }
     }
 
-    public BotConversation startConversation(TwilioCallOperator twilioCallOperator) throws URISyntaxException {
+    public LexBidirectionalStreamingClient() {
+        this.sessionId = UUID.randomUUID().toString();
+    }
 
-        AwsCredentialsProvider awsCredentialsProvider = StaticCredentialsProvider
-                .create(AwsBasicCredentials.create(accessKey, secretKey));
+
+    public BotConversation startConversation(TwilioCallOperator twilioCallOperator) throws URISyntaxException {
 
         // create a new SDK client. you will need to use an async client.
         LOG.info("step 1: creating a new Lex SDK client");
-        LexRuntimeV2AsyncClient lexRuntimeServiceClient = LexRuntimeV2AsyncClient.builder()
-                .region(region)
-                .credentialsProvider(awsCredentialsProvider)
-                .build();
+        // this is created once at class creation time in static block.
 
         // configure bot, alias and locale with which to have a conversation.
         LOG.info("step 2: configuring bot details");
@@ -122,9 +129,11 @@ public class LexBidirectionalStreamingClient {
         // create a stream of audio data to server. stream will start after connection is established with server.
         EventsPublisher eventsPublisher = new EventsPublisher();
 
+        BotConversation botConversation = new BotConversation(eventsPublisher);
+
         // create a class to handle responses from bot. after server processes streamed user data, it will respond back
         // on another stream.
-        BotResponseHandler botResponseHandler = new BotResponseHandler(eventsPublisher, twilioCallOperator);
+        BotResponseHandler botResponseHandler = new BotResponseHandler(botConversation, twilioCallOperator);
 
         // start a connection and pass in the a publisher that will stream audio and process bot responses.
         LOG.info("step 5: starting the conversation ...");
@@ -138,11 +147,12 @@ public class LexBidirectionalStreamingClient {
         // client should send a disconnection event.
         conversation.whenComplete((result, exception) -> {
             if (exception != null) {
-                eventsPublisher.disconnect();
+                eventsPublisher.stop();
+                twilioCallOperator.hangUp(true);
             }
         });
 
-        return new BotConversation(eventsPublisher);
+        return botConversation;
 
     }
 }
