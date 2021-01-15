@@ -14,6 +14,9 @@ For this sample application, you will
 3. Host the application code on a web server.
 4. Configure a Twilio phone number to invoke the application code, when user calls in.
 
+The application automatically disconnects the ongoing call when the conversation with the bot reaches a logical end OR 
+interaction with bot results in any exception.
+
 This documentation uses [Intellij](https://www.jetbrains.com/idea/) IDE to browse, edit and build the code, but you
 can use any IDE of your choice.
 
@@ -25,7 +28,7 @@ can use any IDE of your choice.
 * Create an alias for the bot
 * Note down the bot id and bot alias id. You will need it in next step.
 
-### Step 2 - Configure sample application code with bot details and access credentials
+### Step 2 - Configure sample application code with bot details, bot access credentials, Twilio access credentials
 
 * Checkout the code in your local workspace using git.
 * Open the project in Intellij.
@@ -48,6 +51,13 @@ will need
     * Region
 ```
 <workspace-root>/src/main/java/bot-configuration.properties
+```
+* Configure the code with Twilio configuration. These credentials are used to call Twilio API to disconnection the call
+after the conversation with the bot finishes.  You will need to update the following file. You will need a Twilio account 
+for this. For sign-up instructions, 
+see [here](https://www.twilio.com/console)
+```
+<workspace-root>/src/main/java/twilio-configuration.properties
 ```       
 * Build the code. In Intellij, you would need to click on “*Build→Build Project*” on menu bar. 
 ![BuildProject](images/Intellij-BuildProject.png)
@@ -106,8 +116,6 @@ http://localhost:8889/TwilioWaitAndContinue-1.0/voice
 
 #### Step 4 - Configure a Twilio phone number to invoke the application code, when user calls in.
 
-* Sign up for a Twilio account and create a programmable voice project. For sign-up instructions, 
-see [here](https://www.twilio.com/console)
 * Get a Twilio phone number from Twilio Console. You can use the instructions [here](https://support.twilio.com/hc/en-us/articles/223135247-How-to-Search-for-and-Buy-a-Twilio-Phone-Number-from-Console).
 * Configure your application code to be reached from public internet. You will need to expose port 8889 to internet. 
 You can use ngrok for this. You can use the instructions on how to use ngrok [here](https://ngrok.com/). 
