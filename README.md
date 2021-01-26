@@ -50,14 +50,14 @@ will need
     * Access credentials
     * Region
 ```
-<workspace-root>/src/main/java/bot-configuration.properties
+<workspace-root>/src/main/resources/bot-configuration.properties
 ```
-* Configure the code with Twilio configuration. These credentials are used to call Twilio API to disconnection the call
+* Configure the code with Twilio configuration. These credentials are used to call Twilio API to disconnect the call
 after the conversation with the bot finishes.  You will need to update the following file. You will need a Twilio account 
 for this. For sign-up instructions, 
 see [here](https://www.twilio.com/console)
 ```
-<workspace-root>/src/main/java/twilio-configuration.properties
+<workspace-root>/src/main/resources/twilio-configuration.properties
 ```       
 * Build the code. In Intellij, you would need to click on “*Build→Build Project*” on menu bar. 
 ![BuildProject](images/Intellij-BuildProject.png)
