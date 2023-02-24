@@ -1,4 +1,4 @@
-FROM tomcat:latest
+FROM tomcat:8-jdk11-corretto
 
 COPY war-output/TwilioWaitAndContinue-1.0.war /usr/local/tomcat/webapps/
 

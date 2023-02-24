@@ -85,19 +85,21 @@ public class TwilioCallOperator {
 
     // send back media events as per https://www.twilio.com/docs/voice/twiml/stream#message-media-to-twilio
     public void playback(AudioResponse audioResponse) {
-
         try (CompressInputStream responseStream = new CompressInputStream(audioResponse, false)) {
             byte[] bytes = new byte[MAX_BYTES_TO_READ];
 
             int numOfBytesRead = responseStream.read(bytes);
             //while not end of stream, or not playback paused
+
             while (numOfBytesRead != -1 && !interruptSendingDataToTwilio.get()) {
+
                 byte[] copy = Arrays.copyOf(bytes, numOfBytesRead);
                 MediaMessage mediaMessage = new MediaMessage(copy, callIdentifier.getStreamSid());
                 writeToStream(mediaMessage.getJsonObject(), false);
                 bytes = new byte[MAX_BYTES_TO_READ];
                 numOfBytesRead = responseStream.read(bytes);
             }
+
             //if it was not interrupted, it means it has reached end of stream.
             if (!interruptSendingDataToTwilio.get()) {
                 // mark the end of stream and when we get back the same mark, we inform bot that

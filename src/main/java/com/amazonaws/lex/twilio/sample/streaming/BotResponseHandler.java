@@ -47,15 +47,15 @@ public class BotResponseHandler implements StartConversationResponseHandler {
 
     private final BotConversation botConversation;
     private final TwilioCallOperator twilioCallOperator;
-
-    private boolean lastBotResponsePlayedBack;
     private boolean isDialogStateClosed;
     private AudioResponse audioResponse;
+
+
+
 
     public BotResponseHandler(BotConversation botConversation, TwilioCallOperator twilioCallOperator) {
         this.twilioCallOperator = twilioCallOperator;
         this.botConversation = botConversation;
-        this.lastBotResponsePlayedBack = false;// at start, we have not played back last response from bot
         this.isDialogStateClosed = false; // at start, dialog state is open
     }
 
@@ -78,6 +78,8 @@ public class BotResponseHandler implements StartConversationResponseHandler {
                 handle((TextResponseEvent) event);
             } else if (event instanceof AudioResponseEvent) {
                 handle((AudioResponseEvent) event);
+            } else{
+                LOG.info("Getting an unknown event ..."+event);
             }
         });
     }
@@ -90,7 +92,7 @@ public class BotResponseHandler implements StartConversationResponseHandler {
 
     @Override
     public void complete() {
-        LOG.info("on complete");
+        LOG.info("Publisher sent on complete. No more events will be sent from server.");
     }
 
     private void handle(PlaybackInterruptionEvent event) {
@@ -121,7 +123,7 @@ public class BotResponseHandler implements StartConversationResponseHandler {
         // if dialog state is closed, stop sending events to lex server
         // after the last message is played back, ask twilio call operator to hang up
         if (isDialogStateClosed) {
-            botConversation.stopConversation();
+            isDialogStateClosed = true;
         }
     }
 
@@ -159,14 +161,23 @@ public class BotResponseHandler implements StartConversationResponseHandler {
             audioResponse.write(event.audioChunk().asByteArray());
         } else {
             // no audio bytes means audio prompt has ended.
-            try {
-                if (audioResponse != null) {
-                    audioResponse.close();
-                }
-                audioResponse = null;  // prepare  for next audio prompt.
-            } catch (IOException e) {
-                throw new UncheckedIOException("got an exception when closing the audio response", e);
+            closeAudioStream();
+            //if dialog is closed now, we can also end the conversation, and send a disconnect to server.
+            if(isDialogStateClosed){
+                botConversation.stopConversation();
             }
+        }
+    }
+
+    private void closeAudioStream(){
+        try {
+            if (audioResponse != null) {
+                LOG.info("Closing writing to in memory audio response....");
+                audioResponse.close();
+            }
+            audioResponse = null;  // prepare  for next audio prompt.
+        } catch (IOException e) {
+            throw new UncheckedIOException("got an exception when closing the audio response", e);
         }
     }
 

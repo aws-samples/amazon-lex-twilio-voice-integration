@@ -72,6 +72,13 @@ public class BotConversation {
         }
     }
 
+    /**
+     * Make sure this method is called after all the bot responses have been relayed back to Twilio.
+     * Otherwise, this method call will send a Disconnect event to Lex, and Lex will subsequently end
+     * the underlying HTTP connection (by design). Lex will not wait to send all the audio bytes back
+     * to the client as it assumes that client can't handle it anymore and that is why it has sent
+     * a Disconnect event.
+     */
     public void stopConversation() {
         lock.lock();
         try {
