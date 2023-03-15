@@ -157,7 +157,7 @@ public class BotResponseHandler implements StartConversationResponseHandler {
 				error.printStackTrace();
 			}
 	    	});
-	    }			                }
+	    }
             audioResponse = new AudioResponse();
             CompletableFuture.runAsync(() -> twilioCallOperator.playback(audioResponse)).whenComplete((result, error) -> {
                 if (error != null) {
