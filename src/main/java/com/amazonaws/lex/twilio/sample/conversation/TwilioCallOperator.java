@@ -77,11 +77,7 @@ public class TwilioCallOperator {
         this.session = session;
         this.interruptSendingDataToTwilio = new AtomicBoolean(false);
         this.currentPlaybackLabel = Optional.empty();
-<<<<<<< HEAD
 	LOG.info("Incoming call from Twilio, call operator details: " + this.callIdentifier + " and session: " + this.session);
-=======
-	    LOG.info("Incoming call from Twilio, call operator details: " + this.callIdentifier + " and session: " + this.session);
->>>>>>> daec67c (Handle empty audio during intent fulfillment)
     }
 
     public Optional<String> getCurrentPlaybackLabel() {
