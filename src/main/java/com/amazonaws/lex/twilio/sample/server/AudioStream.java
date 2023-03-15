@@ -82,7 +82,7 @@ public class AudioStream {
 
     @OnMessage
     public void onMessage(Message message) {
-        //LOG.info("message ..." + message);
+        LOG.info("message ..." + message);
         if (message.eventType().equals(MessageType.CONNECTED)) {
             // first message, does not contain anything useful
             // apart from some meta data.

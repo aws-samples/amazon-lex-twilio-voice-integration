@@ -3,6 +3,7 @@ package com.amazonaws.lex.twilio.sample.server.messages;
 import com.amazonaws.lex.twilio.sample.server.CallIdentifier;
 import com.amazonaws.lex.twilio.sample.server.media.MediaFormat;
 import com.google.gson.JsonObject;
+import org.apache.log4j.Logger;
 
 import java.util.StringJoiner;
 
@@ -26,12 +27,15 @@ import java.util.StringJoiner;
 public class StartMessage {
     private final JsonObject jsonObject;
 
+    private static final Logger LOG = Logger.getLogger(StartMessage.class);
+
     public StartMessage(JsonObject jsonObject) {
         this.jsonObject = jsonObject;
     }
 
     public CallIdentifier getCallIdentifier() {
         JsonObject startObj = getStartObject();
+	LOG.info("Got Caller Identifier for call incoming: " + startObj);
 
         return new CallIdentifier(
                 startObj.get("accountSid").getAsString(),

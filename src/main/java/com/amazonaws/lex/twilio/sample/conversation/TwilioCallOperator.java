@@ -77,6 +77,7 @@ public class TwilioCallOperator {
         this.session = session;
         this.interruptSendingDataToTwilio = new AtomicBoolean(false);
         this.currentPlaybackLabel = Optional.empty();
+	LOG.info("Incoming call from Twilio, call operator details: " + this.callIdentifier + " and session: " + this.session);
     }
 
     public Optional<String> getCurrentPlaybackLabel() {
