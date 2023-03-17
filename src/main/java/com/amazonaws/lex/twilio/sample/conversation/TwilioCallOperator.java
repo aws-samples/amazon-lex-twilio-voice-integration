@@ -77,12 +77,19 @@ public class TwilioCallOperator {
         this.session = session;
         this.interruptSendingDataToTwilio = new AtomicBoolean(false);
         this.currentPlaybackLabel = Optional.empty();
+	LOG.info("Incoming call from Twilio, call operator details: " + this.callIdentifier + " and session: " + this.session);
     }
 
     public Optional<String> getCurrentPlaybackLabel() {
         return currentPlaybackLabel;
     }
 
+    public void writeEmptyStream() {
+        LOG.info("Audio stream is empty!!, writing empty playback message to server");
+        currentPlaybackLabel = Optional.of(UUID.randomUUID().toString());
+        writeToStream(new MarkMessage(callIdentifier.getStreamSid(), currentPlaybackLabel.get()).getJsonObject(), true);
+    }
+    
     // send back media events as per https://www.twilio.com/docs/voice/twiml/stream#message-media-to-twilio
     public void playback(AudioResponse audioResponse) {
         try (CompressInputStream responseStream = new CompressInputStream(audioResponse, false)) {

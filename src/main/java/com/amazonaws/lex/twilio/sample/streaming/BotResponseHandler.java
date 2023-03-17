@@ -146,9 +146,18 @@ public class BotResponseHandler implements StartConversationResponseHandler {
 
     private void handle(AudioResponseEvent event) {//synthesize speech
         // LOG.info("Got a AudioResponseEvent: " + event);
-        if (audioResponse == null && event.audioChunk() != null) {
+        //if (audioResponse == null && event.audioChunk() != null) {
+        if (audioResponse == null ) {
 
             LOG.info("got a non empty audio response. starting a audio response collector in a separate thread");
+	    LOG.info("Audiochunk is non-empty? : " + (event.audioChunk() != null));
+	    if (event.audioChunk() == null) {
+		CompletableFuture.runAsync(() -> twilioCallOperator.writeEmptyStream()).whenComplete((result, error) -> {
+			if (error != null) {
+				error.printStackTrace();
+			}
+	    	});
+	    }
             audioResponse = new AudioResponse();
             CompletableFuture.runAsync(() -> twilioCallOperator.playback(audioResponse)).whenComplete((result, error) -> {
                 if (error != null) {
